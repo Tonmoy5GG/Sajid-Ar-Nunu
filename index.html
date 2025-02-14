@@ -1,39 +1,89 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Umma Dollar Buy Sell</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <div class="container">
-        <h1>Umma Dollar Buy Sell</h1>
-        <p>বিশ্বাসের আরেক নাম Umma Buy Sell, 24/7 যে কোন ডলার এক্সচেঞ্জ করতে পারবেন।</p>
+import { useState, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Select, SelectTrigger, SelectContent, SelectItem } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 
-        <div class="exchange-box">
-            <h2>You Sent</h2>
-            <select id="payment-method">
-                <option value="Bkash Personal">Bkash Personal</option>
-                <option value="Nagad Personal">Nagad Personal</option>
-                <option value="Rocket Personal">Rocket Personal</option>
-            </select>
-            
-            <input type="number" id="amount" placeholder="Enter amount in BDT" oninput="calculateCrypto()">
-            
-            <h2>You Receive</h2>
-            <select id="receive-method" onchange="calculateCrypto()">
-                <option value="USDT">USDT (Tether)</option>
-                <option value="BTC">Bitcoin (BTC)</option>
-                <option value="ETH">Ethereum (ETH)</option>
-            </select>
-            
-            <input type="text" id="crypto-amount" placeholder="Receive Amount" readonly>
-            
-            <button onclick="createOrder()">Create Order</button>
-        </div>
+export default function UmmaDollarExchange() {
+  const [sendMethod, setSendMethod] = useState("bkash");
+  const [sendAmount, setSendAmount] = useState(0);
+  const [receiveMethod, setReceiveMethod] = useState("USDT");
+  const [receiveAmount, setReceiveAmount] = useState(0);
+  const [exchangeRate, setExchangeRate] = useState({ USDT: 110, BTC: 50000, ETH: 3500 });
+
+  useEffect(() => {
+    async function fetchRates() {
+      try {
+        const response = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=tether,bitcoin,ethereum&vs_currencies=usd");
+        const data = await response.json();
+        setExchangeRate({
+          USDT: data.tether.usd,
+          BTC: data.bitcoin.usd,
+          ETH: data.ethereum.usd,
+        });
+      } catch (error) {
+        console.error("Error fetching exchange rates:", error);
+      }
+    }
+    fetchRates();
+  }, []);
+
+  useEffect(() => {
+    setReceiveAmount(sendAmount / exchangeRate[receiveMethod]);
+  }, [sendAmount, receiveMethod, exchangeRate]);
+
+  return (
+    <div className="p-6 max-w-lg mx-auto">
+      <h1 className="text-2xl font-bold text-center mb-4">বিশ্বাসের আরেক নাম Umma Buy Sell</h1>
+      <p className="text-center text-gray-500 mb-6">24/7 যে কোন ডলার এক্সচেঞ্জ করতে পারবেন।</p>
+      
+      <Card>
+        <CardContent className="p-4 space-y-4">
+          <h2 className="text-lg font-semibold">You Send</h2>
+          <div className="flex space-x-4">
+            <Select onValueChange={setSendMethod}>
+              <SelectTrigger>{sendMethod}</SelectTrigger>
+              <SelectContent>
+                <SelectItem value="bkash">Bkash</SelectItem>
+                <SelectItem value="nagad">Nagad</SelectItem>
+                <SelectItem value="rocket">Rocket</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input 
+              type="number" 
+              value={sendAmount} 
+              onChange={(e) => setSendAmount(parseFloat(e.target.value) || 0)} 
+              placeholder="Amount"
+            />
+          </div>
+        </CardContent>
+      </Card>
+      
+      <div className="text-center my-4 font-semibold">You Receive</div>
+      
+      <Card>
+        <CardContent className="p-4 space-y-4">
+          <h2 className="text-lg font-semibold">You Receive</h2>
+          <div className="flex space-x-4">
+            <Select onValueChange={setReceiveMethod}>
+              <SelectTrigger>{receiveMethod}</SelectTrigger>
+              <SelectContent>
+                <SelectItem value="USDT">USDT</SelectItem>
+                <SelectItem value="BTC">BTC</SelectItem>
+                <SelectItem value="ETH">ETH</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input 
+              type="number" 
+              value={receiveAmount.toFixed(2)}
+              readOnly 
+              placeholder="Amount"
+            />
+          </div>
+        </CardContent>
+      </Card>
+      
+      <Button className="w-full mt-4">Exchange Now</Button>
     </div>
-
-    <script src="script.js"></script>
-</body>
-</html>
+  );
+}
